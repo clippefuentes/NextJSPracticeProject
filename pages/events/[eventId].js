@@ -1,21 +1,17 @@
 import { Fragment } from 'react'
-import { useRouter } from "next/router"
 
 import EventSummary from '../../components/event-detail/event-summary';
 import EventLogistics from '../../components/event-detail/event-logistics';
 import EventContent from '../../components/event-detail/event-content';
 
-import { getEventById } from "../../dummy-date"
+import { getEventById, getAllEvents, getFeaturedEvents } from "../../helpers/api-util";
 
-const EventIdComponent = ({}) => {
-  const router = useRouter()
-  
-  const eventId = router.query.eventId
-  const event = getEventById(eventId);
+const EventIdComponent = (props) => {
+  const event = props.selectedEvent;
 
   if (!event) {
-    return <div>
-      Event not found
+    return <div className='center'>
+      Loading...
     </div>
   }
 
@@ -31,6 +27,34 @@ const EventIdComponent = ({}) => {
       <p>{event.description}</p>
     </EventContent>
   </Fragment>
+}
+
+export async function getStaticProps(context) {
+  const eventId = context.params.eventId
+  const event = await getEventById(eventId);
+
+  return {
+    props: {
+      selectedEvent: event,
+    },
+    revalidate: 1800,
+  }  
+}
+
+export async function getStaticPaths() {
+  const events = await getFeaturedEvents();
+  const paths = events.map((event) => {
+    return {
+      params: {
+        eventId: event.id,
+      },
+    }
+  })
+
+  return {
+    paths,
+    fallback: 'blocking',
+  }
 }
 
 export default EventIdComponent
